@@ -80,10 +80,10 @@ L_constants:
 	db T_boolean_false
 	db T_boolean_true
 	db T_char, 0x00	; #\x0
-	db T_rational	; 121
-	dq 121, 1
-	db T_rational	; 212
-	dq 212, 1
+	db T_rational	; 69
+	dq 69, 1
+	db T_rational	; 12
+	dq 12, 1
 
 section .bss
 free_var_0:	; location of null?
@@ -1059,7 +1059,7 @@ bind_primitive:
         LEAVE
         ret
 
-;;; PLEASE IMPLEMENT THIS PROCEDURE
+;; PLEASE IMPLEMENT THIS PROCEDURE
 L_code_ptr_bin_apply:
         
         ENTER
@@ -1080,15 +1080,12 @@ L_code_ptr_bin_apply:
         mov rbx, 2
         push rbx
 
-        ; jmp L_sagy_debug
 	cmp byte [rax], T_closure 
         jne L_code_ptr_error
 
         mov rbx, SOB_CLOSURE_ENV(rax)
         push rbx
 
-        ; mov rbx, [rsp + 4 * 8]
-        ; mov [rsp], rbx
         call SOB_CLOSURE_CODE(rax)
 
 	; mov rdi, rax
@@ -1096,6 +1093,82 @@ L_code_ptr_bin_apply:
 
         LEAVE
         ret AND_KILL_FRAME(3)
+
+; L_code_ptr_bin_apply:
+        
+;         ENTER
+        ; cmp COUNT, 2
+        ; jne L_error_arg_count_2
+
+        ; mov rax, PARAM(0)       ; rax <- closure
+        ; cmp byte [rax], T_closure ;  is it a closure? 
+        ; jne L_error_non_closure ;; if not closure jmp kibinimat
+        ;; make sure it is a closure                
+
+        ;; goal to apply closure on 2 params
+        ; mov rax, qword PARAM(1)
+        ; push rax                ; rax <- list of args
+
+        ;; get car
+	; push 1
+	; mov rax, qword L_code_ptr_car
+	; cmp byte [rax], T_closure 
+        ; jne L_code_ptr_error
+
+        ; mov rbx, SOB_CLOSURE_ENV(rax)
+
+        ; push rbx
+
+        ; call SOB_CLOSURE_CODE(rax)
+
+        ; mov rdx, rax ;; keep first arg
+
+        ;; get cadr ***
+        ; push 1
+	; mov rax, qword L_code_ptr_cdr
+	; cmp byte [rax], T_closure 
+        ; jne L_code_ptr_error
+
+        ; mov rbx, SOB_CLOSURE_ENV(rax)
+
+        ; push rbx
+
+        ; call SOB_CLOSURE_CODE(rax)
+
+        ; mov rdx, rax ;; keep first arg
+
+        
+
+
+        
+
+
+
+
+
+
+
+
+
+        ; mov rbx, [rsp + 1 * 8]
+        ; mov [rsp], rbx
+        
+        ; mov rbx, 2
+        ; push rbx
+
+	; cmp byte [rax], T_closure 
+        ; jne L_code_ptr_error
+
+        ; mov rbx, SOB_CLOSURE_ENV(rax)
+        ; push rbx
+
+        ; call SOB_CLOSURE_CODE(rax)
+
+	; mov rdi, rax
+	; call print_sexpr_if_not_void
+
+        ; LEAVE
+        ; ret AND_KILL_FRAME(0)
      
 	
 L_code_ptr_is_null:

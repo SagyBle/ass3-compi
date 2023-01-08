@@ -120,5 +120,15 @@ mov rax, 0
 call printf
 
 
+(* moving above two pushed args *)
+mov rbx, [rsp + 16]
+mov [rsp], rbx
+
+
+(* cancelling push to stack by jumping over *)
+; mov rbx, [rsp + n * 8]
+; mov [rsp], rbx
+
+
 
 
