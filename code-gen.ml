@@ -617,9 +617,6 @@ let string_to_file output_file out_string =
         call SOB_CLOSURE_CODE(rax)\n
         "
 
-      
-        
-
       (*  | ScmApplic' (proc, args, Tail_Call) -> raise X_not_yet_implemented  *)
     and runs params env exprs' =
       List.map

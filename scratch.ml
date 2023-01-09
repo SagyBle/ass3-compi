@@ -131,4 +131,118 @@ mov [rsp], rbx
 
 
 
+L_code_ptr_bin_apply:
+        
+        ENTER
+        cmp COUNT, 3
+        jne L_error_arg_count_3
+
+        mov rax, PARAM(0)       ; rax <- closure
+        cmp byte [rax], T_closure ;  is it a closure? 
+        jne L_error_non_closure ;; if not closure jmp kibinimat
+        ; make sure it is a closure                
+
+        
+        mov rax, qword PARAM(1)
+        ; push rax                ; rax <- list of args
+
+        ;; get car
+	; push 1
+	; mov rax, qword L_code_ptr_car
+	; cmp byte [rax], T_closure 
+        ; jne L_code_ptr_error
+
+        ; mov rbx, SOB_CLOSURE_ENV(rax)
+
+        ; push rbx
+
+        ; call SOB_CLOSURE_CODE(rax)
+
+        ; mov rdx, rax ;; keep first arg
+
+        ;; get cadr ***
+        ; push 1
+	; mov rax, qword L_code_ptr_cdr
+	; cmp byte [rax], T_closure 
+        ; jne L_code_ptr_error
+
+        ; mov rbx, SOB_CLOSURE_ENV(rax)
+
+        ; push rbx
+
+        ; call SOB_CLOSURE_CODE(rax)
+
+        ; mov rdx, rax ;; keep first arg
+
+
+        ; mov rbx, [rsp + 1 * 8]
+        ; mov [rsp], rbx
+        
+        ; mov rbx, 2
+        ; push rbx
+
+	; cmp byte [rax], T_closure 
+        ; jne L_code_ptr_error
+
+        ; mov rbx, SOB_CLOSURE_ENV(rax)
+        ; push rbx
+
+        ; call SOB_CLOSURE_CODE(rax)
+
+       LEAVE
+        ret AND_KILL_FRAME(0)
+        mov rdi, rax
+	call print_sexpr_if_not_void
+
+        ; mov rbx, [rsp + 1 * 8]
+        ; mov [rsp], rbx
+
+        LEAVE
+        ret AND_KILL_FRAME(0)
+
+
+
+
+        (* vvv this one aplly a function on two first args:  vvv*)
+
+
+        L_code_ptr_bin_apply:
+        
+        ENTER
+        cmp COUNT, 3
+        jne L_error_arg_count_3
+
+        mov rax, PARAM(0)       ; rax <- closure
+        cmp byte [rax], T_closure ;  is it a closure? 
+        jne L_error_non_closure ;; if not closure jmp kibinimat
+        ;; make sure it is a closure                
+
+        ;; goal to apply closure on 2 params
+        mov rbx, qword PARAM(1)
+        push rbx                ; push arg
+        mov rcx, qword PARAM(2)
+        push rcx                ; push arg
+        
+        mov rbx, 2
+        push rbx
+
+	cmp byte [rax], T_closure 
+        jne L_code_ptr_error
+
+        mov rbx, SOB_CLOSURE_ENV(rax)
+        push rbx
+
+        call SOB_CLOSURE_CODE(rax)
+
+	; mov rdi, rax
+	; call print_sexpr_if_not_void
+
+        LEAVE
+        ret AND_KILL_FRAME(3)
+
+    (* ^^^ this one aplly a function on two first args:  ^^^ *)
+
+        
+
+
 

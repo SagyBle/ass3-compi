@@ -545,23 +545,70 @@ bind_primitive:
         LEAVE
         ret
 
-;; PLEASE IMPLEMENT THIS PROCEDURE
+; ; PLEASE IMPLEMENT THIS PROCEDURE
+; L_code_ptr_bin_apply:
+        
+;         ENTER
+;         cmp COUNT, 3
+;         jne L_error_arg_count_3
+
+;         mov rax, PARAM(0)       ; rax <- closure
+;         cmp byte [rax], T_closure ;  is it a closure? 
+;         jne L_error_non_closure ;; if not closure jmp kibinimat
+;         ;; make sure it is a closure                
+
+;         ;; goal to apply closure on 2 params
+;         mov rbx, qword PARAM(2)
+;         push rbx                ; push arg push 12
+;         mov rcx, qword PARAM(1)
+;         push rcx                ; push arg push '(69 70)
+        
+;         mov rbx, 2
+;         push rbx
+
+; 	cmp byte [rax], T_closure 
+;         jne L_code_ptr_error
+
+;         mov rbx, SOB_CLOSURE_ENV(rax)
+;         push rbx
+
+;         call SOB_CLOSURE_CODE(rax)
+
+; 	; mov rdi, rax
+; 	; call print_sexpr_if_not_void
+
+;         LEAVE
+;         ret AND_KILL_FRAME(3)
+
 L_code_ptr_bin_apply:
         
         ENTER
-        cmp COUNT, 3
-        jne L_error_arg_count_3
+        cmp COUNT, 2
+        jne L_error_arg_count_2
 
         mov rax, PARAM(0)       ; rax <- closure
         cmp byte [rax], T_closure ;  is it a closure? 
         jne L_error_non_closure ;; if not closure jmp kibinimat
-        ;; make sure it is a closure                
+        ;; make sure it is a closure
+
+        
+                    
 
         ;; goal to apply closure on 2 params
-        mov rbx, qword PARAM(1)
-        push rbx                ; push arg
-        mov rcx, qword PARAM(2)
-        push rcx                ; push arg
+        mov r9, qword PARAM(1)
+        assert_pair(r9)
+        mov rcx, qword SOB_PAIR_CDR(r9)
+        mov r9, qword rcx
+        assert_pair(r9)
+        mov rcx, qword SOB_PAIR_CAR(r9)
+        push rcx
+
+
+        mov r9, PARAM(1)   ; car of the pair in the stack
+        assert_pair(r9)
+        mov rcx, qword SOB_PAIR_CAR(r9)
+        push rcx
+
         
         mov rbx, 2
         push rbx
@@ -578,84 +625,19 @@ L_code_ptr_bin_apply:
 	; call print_sexpr_if_not_void
 
         LEAVE
-        ret AND_KILL_FRAME(3)
+        ret AND_KILL_FRAME(2)
 
 ; L_code_ptr_bin_apply:
-        
 ;         ENTER
-        ; cmp COUNT, 2
-        ; jne L_error_arg_count_2
-
-        ; mov rax, PARAM(0)       ; rax <- closure
-        ; cmp byte [rax], T_closure ;  is it a closure? 
-        ; jne L_error_non_closure ;; if not closure jmp kibinimat
-        ;; make sure it is a closure                
-
-        ;; goal to apply closure on 2 params
-        ; mov rax, qword PARAM(1)
-        ; push rax                ; rax <- list of args
-
-        ;; get car
-	; push 1
-	; mov rax, qword L_code_ptr_car
-	; cmp byte [rax], T_closure 
-        ; jne L_code_ptr_error
-
-        ; mov rbx, SOB_CLOSURE_ENV(rax)
-
-        ; push rbx
-
-        ; call SOB_CLOSURE_CODE(rax)
-
-        ; mov rdx, rax ;; keep first arg
-
-        ;; get cadr ***
-        ; push 1
-	; mov rax, qword L_code_ptr_cdr
-	; cmp byte [rax], T_closure 
-        ; jne L_code_ptr_error
-
-        ; mov rbx, SOB_CLOSURE_ENV(rax)
-
-        ; push rbx
-
-        ; call SOB_CLOSURE_CODE(rax)
-
-        ; mov rdx, rax ;; keep first arg
-
-        
+;         cmp COUNT, 1
+;         jne L_error_arg_count_1
+;         mov r9, PARAM(0)
+;         assert_pair(r9)
+;         mov rax, SOB_PAIR_CAR(r9)
+;         LEAVE
+;         ret AND_KILL_FRAME(1)
 
 
-        
-
-
-
-
-
-
-
-
-
-        ; mov rbx, [rsp + 1 * 8]
-        ; mov [rsp], rbx
-        
-        ; mov rbx, 2
-        ; push rbx
-
-	; cmp byte [rax], T_closure 
-        ; jne L_code_ptr_error
-
-        ; mov rbx, SOB_CLOSURE_ENV(rax)
-        ; push rbx
-
-        ; call SOB_CLOSURE_CODE(rax)
-
-	; mov rdi, rax
-	; call print_sexpr_if_not_void
-
-        ; LEAVE
-        ; ret AND_KILL_FRAME(0)
-     
 	
 L_code_ptr_is_null:
         ENTER
