@@ -84,10 +84,22 @@ L_constants:
 	dq 1, 1
 	db T_rational	; 2
 	dq 2, 1
-	db T_pair	; (2)
-	dq L_constants + 23, L_constants + 1
-	db T_pair	; (1 2)
-	dq L_constants + 6, L_constants + 40
+	db T_rational	; 3
+	dq 3, 1
+	db T_rational	; 4
+	dq 4, 1
+	db T_rational	; 5
+	dq 5, 1
+	db T_pair	; (5)
+	dq L_constants + 74, L_constants + 1
+	db T_pair	; (4 5)
+	dq L_constants + 57, L_constants + 91
+	db T_pair	; (3 4 5)
+	dq L_constants + 40, L_constants + 108
+	db T_pair	; (2 3 4 5)
+	dq L_constants + 23, L_constants + 125
+	db T_pair	; (1 2 3 4 5)
+	dq L_constants + 6, L_constants + 142
 
 section .bss
 free_var_0:	; location of null?
@@ -496,7 +508,7 @@ main:
 	mov rsi, L_code_ptr_bin_apply
 	call bind_primitive
 
-	mov rax, qword (L_constants + 57)
+	mov rax, qword (L_constants + 159)
 	push rax
 	mov rax, qword [free_var_13]
 	push rax
@@ -1061,24 +1073,42 @@ bind_primitive:
         LEAVE
         ret
 
-; ; PLEASE IMPLEMENT THIS PROCEDURE
+
 ; L_code_ptr_bin_apply:
         
 ;         ENTER
-;         cmp COUNT, 3
-;         jne L_error_arg_count_3
+;         cmp COUNT, 2
+;         jne L_error_arg_count_2
 
 ;         mov rax, PARAM(0)       ; rax <- closure
 ;         cmp byte [rax], T_closure ;  is it a closure? 
 ;         jne L_error_non_closure ;; if not closure jmp kibinimat
-;         ;; make sure it is a closure                
 
-;         ;; goal to apply closure on 2 params
-;         mov rbx, qword PARAM(2)
-;         push rbx                ; push arg push 12
-;         mov rcx, qword PARAM(1)
-;         push rcx                ; push arg push '(69 70)
         
+;         ; handle cdr
+;         mov r9, qword PARAM(1)
+;         assert_pair(r9)
+;         mov rcx, qword SOB_PAIR_CDR(r9)
+;         mov r10, qword rcx      ; r10 <- cdr
+;         assert_pair(r10)
+;         mov rcx, qword SOB_PAIR_CAR(r10)         ; rcx <- cadr
+;         ; push rcx                ; push rcx (cadr) ***
+
+;         ; handle car
+;         mov r9, PARAM(1)   
+;         assert_pair(r9)
+;         mov rcx, qword SOB_PAIR_CAR(r9)
+;         push rcx                ; push car
+
+;         ; handle  caddr (car (cdr (cdr list)))
+;         assert_pair(r10)
+;         mov rcx, qword SOB_PAIR_CDR(r10)
+;         mov r10, qword rcx      ; r10 <- cdr
+;         assert_pair(r10)
+;         mov rcx, qword SOB_PAIR_CAR(r10)
+;         push rcx
+        
+
 ;         mov rbx, 2
 ;         push rbx
 
@@ -1094,7 +1124,8 @@ bind_primitive:
 ; 	; call print_sexpr_if_not_void
 
 ;         LEAVE
-;         ret AND_KILL_FRAME(3)
+;         ret AND_KILL_FRAME(2)
+
 
 L_code_ptr_bin_apply:
         
@@ -1105,26 +1136,27 @@ L_code_ptr_bin_apply:
         mov rax, PARAM(0)       ; rax <- closure
         cmp byte [rax], T_closure ;  is it a closure? 
         jne L_error_non_closure ;; if not closure jmp kibinimat
-        ;; make sure it is a closure
 
         
-                    
+        ; handle cdr
+        mov r10, qword PARAM(1)
+        assert_pair(r10)
+        mov rcx, qword SOB_PAIR_CDR(r10)
+        mov r10, qword rcx      ; r10 <- cdr
+        assert_pair(r10)
+        mov rcx, qword SOB_PAIR_CAR(r10)         ; r11 <- cadr
+        mov r11, qword rcx
+        push rcx                ; push rcx (cadr) ***
 
-        ;; goal to apply closure on 2 params
-        mov r9, qword PARAM(1)
+        ; handle car
+        mov r9, PARAM(1)   
         assert_pair(r9)
-        mov rcx, qword SOB_PAIR_CDR(r9)
+        mov rcx, qword SOB_PAIR_CAR(r9)
         mov r9, qword rcx
-        assert_pair(r9)
-        mov rcx, qword SOB_PAIR_CAR(r9)
-        push rcx
+        push rcx                ; push car
 
 
-        mov r9, PARAM(1)   ; car of the pair in the stack
-        assert_pair(r9)
-        mov rcx, qword SOB_PAIR_CAR(r9)
-        push rcx
-
+        
         
         mov rbx, 2
         push rbx
@@ -1137,24 +1169,64 @@ L_code_ptr_bin_apply:
 
         call SOB_CLOSURE_CODE(rax)
 
+        mov r9, qword rax
+
 	; mov rdi, rax
 	; call print_sexpr_if_not_void
 
+        ; if there are more args left in the list, go to list not done.
+        ; get rest of the list
+        ; r10 <- cdr already
+        assert_pair(r10)
+        mov rcx, qword SOB_PAIR_CDR(r10)
+        mov r10, qword rcx
+        cmp byte [r10], T_nil
+        je .L_list_is_done
+.L_list_not_done:
+        ; r9 <- result, r10 <- rest of the list, r11 <- not relevnt
+        assert_pair(r10)
+        mov rcx, qword SOB_PAIR_CAR(r10)
+        mov r11, qword rcx
+
+        ; r9 <- result, r10 <- rest of the list, r11 <- car(rest of the list)
+        push rcx
+        mov rcx, qword r9
+        push rcx
+        mov rbx, 2
+        push rbx
+
+        mov rax, PARAM(0)       ; rax <- closure
+        cmp byte [rax], T_closure ;  is it a closure? 
+        jne L_error_non_closure ;; if not closure jmp kibinimat
+
+        mov rbx, SOB_CLOSURE_ENV(rax)
+        push rbx
+
+        call SOB_CLOSURE_CODE(rax)
+
+        mov r9, qword rax
+
+
+        ; supposed to do 3 args
+
+        assert_pair(r10)
+        mov rcx, qword SOB_PAIR_CDR(r10)
+        mov r10, qword rcx
+        cmp byte [r10], T_nil
+        jne .L_list_not_done
+
+
+
+
+
+.L_list_is_done:
         LEAVE
         ret AND_KILL_FRAME(2)
 
-; L_code_ptr_bin_apply:
-;         ENTER
-;         cmp COUNT, 1
-;         jne L_error_arg_count_1
-;         mov r9, PARAM(0)
-;         assert_pair(r9)
-;         mov rax, SOB_PAIR_CAR(r9)
-;         LEAVE
-;         ret AND_KILL_FRAME(1)
 
 
-	
+
+
 L_code_ptr_is_null:
         ENTER
         cmp COUNT, 1
