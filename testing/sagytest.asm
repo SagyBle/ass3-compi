@@ -80,26 +80,29 @@ L_constants:
 	db T_boolean_false
 	db T_boolean_true
 	db T_char, 0x00	; #\x0
-	db T_rational	; 1
-	dq 1, 1
-	db T_rational	; 2
-	dq 2, 1
-	db T_rational	; 3
-	dq 3, 1
-	db T_rational	; 4
-	dq 4, 1
-	db T_rational	; 5
-	dq 5, 1
-	db T_pair	; (5)
-	dq L_constants + 74, L_constants + 1
-	db T_pair	; (4 5)
-	dq L_constants + 57, L_constants + 91
-	db T_pair	; (3 4 5)
-	dq L_constants + 40, L_constants + 108
-	db T_pair	; (2 3 4 5)
-	dq L_constants + 23, L_constants + 125
-	db T_pair	; (1 2 3 4 5)
-	dq L_constants + 6, L_constants + 142
+	db T_string	; "a"
+	dq 1
+	db 0x61
+	db T_symbol	; a
+	dq L_constants + 6
+	db T_string	; "b"
+	dq 1
+	db 0x62
+	db T_symbol	; b
+	dq L_constants + 25
+	db T_string	; "c"
+	dq 1
+	db 0x63
+	db T_symbol	; c
+	dq L_constants + 44
+	db T_pair	; (c)
+	dq L_constants + 54, L_constants + 1
+	db T_pair	; (b c)
+	dq L_constants + 35, L_constants + 63
+	db T_pair	; (a b c)
+	dq L_constants + 16, L_constants + 80
+	db T_pair	; ((a b c))
+	dq L_constants + 97, L_constants + 1
 
 section .bss
 free_var_0:	; location of null?
@@ -508,9 +511,9 @@ main:
 	mov rsi, L_code_ptr_bin_apply
 	call bind_primitive
 
-	mov rax, qword (L_constants + 159)
+	mov rax, qword (L_constants + 114)
 	push rax
-	mov rax, qword [free_var_13]
+	mov rax, qword [free_var_16]
 	push rax
 	push 2
 	mov rax, qword [free_var_56]
