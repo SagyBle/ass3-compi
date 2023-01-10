@@ -1202,26 +1202,21 @@ L_code_ptr_bin_apply:
         mov rbx, SOB_CLOSURE_ENV(rax)
         push rbx
 
-        call SOB_CLOSURE_CODE(rax)
+        call SOB_CLOSURE_CODE(rax)  ; rax <- result
+                                        
+        mov r9, qword rax           ; r9 <- result
 
-        mov r9, qword rax
-
-
-        ; supposed to do 3 args
-
+                                ; set 10 to be the cdr of current list.
         assert_pair(r10)
         mov rcx, qword SOB_PAIR_CDR(r10)
         mov r10, qword rcx
-        cmp byte [r10], T_nil
+        cmp byte [r10], T_nil   ; check if rest of the list is empty 
         jne .L_list_not_done
 
 
-
-
-
-.L_list_is_done:
-        LEAVE
-        ret AND_KILL_FRAME(2)
+.L_list_is_done:                 ; salamat veyom tov neshama
+        LEAVE                    ; bye capara
+        ret AND_KILL_FRAME(2)    ; shelohim yishmor otcha amen
 
 
 
