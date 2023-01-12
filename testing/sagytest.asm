@@ -80,29 +80,14 @@ L_constants:
 	db T_boolean_false
 	db T_boolean_true
 	db T_char, 0x00	; #\x0
-	db T_string	; "a"
-	dq 1
-	db 0x61
-	db T_symbol	; a
-	dq L_constants + 6
-	db T_string	; "b"
-	dq 1
-	db 0x62
-	db T_symbol	; b
-	dq L_constants + 25
-	db T_string	; "c"
-	dq 1
-	db 0x63
-	db T_symbol	; c
-	dq L_constants + 44
-	db T_pair	; (c)
-	dq L_constants + 54, L_constants + 1
-	db T_pair	; (b c)
-	dq L_constants + 35, L_constants + 63
-	db T_pair	; (a b c)
-	dq L_constants + 16, L_constants + 80
-	db T_pair	; ((a b c))
-	dq L_constants + 97, L_constants + 1
+	db T_rational	; 190
+	dq 190, 1
+	db T_rational	; 191
+	dq 191, 1
+	db T_rational	; 192
+	dq 192, 1
+	db T_rational	; 193
+	dq 193, 1
 
 section .bss
 free_var_0:	; location of null?
@@ -216,8 +201,6 @@ free_var_53:	; location of numerator
 free_var_54:	; location of denominator
 	resq 1
 free_var_55:	; location of eq?
-	resq 1
-free_var_56:	; location of apply
 	resq 1
 
 extern printf, fprintf, stdout, stderr, fwrite, exit, putchar
@@ -506,17 +489,177 @@ main:
 	mov rsi, L_code_ptr_eq
 	call bind_primitive
 
-	; building closure for apply
-	mov rdi, free_var_56
-	mov rsi, L_code_ptr_bin_apply
-	call bind_primitive
-
-	mov rax, qword (L_constants + 114)
+	push 0
+	mov rdi, (1 + 8 + 8)	; sob closure
+	call malloc
 	push rax
-	mov rax, qword [free_var_16]
+	mov rdi, 8 * 0	; new rib
+	call malloc
+	push rax
+	mov rdi, 8 * 1	; extended env
+	call malloc
+	mov rdi, ENV
+	mov rsi, 0
+	mov rdx, 1
+.L_lambda_simple_env_loop_0001:	; ext_env[i + 1] <-- env[i]
+	cmp rsi, 0
+	je .L_lambda_simple_env_end_0001
+	mov rcx, qword [rdi + 8 * rsi]
+	mov qword [rax + 8 * rdx], rcx
+	inc rsi
+	inc rdx
+	jmp .L_lambda_simple_env_loop_0001
+.L_lambda_simple_env_end_0001:
+	pop rbx
+	mov rsi, 0
+.L_lambda_simple_params_loop_0001:	; copy params
+	cmp rsi, 0
+	je .L_lambda_simple_params_end_0001
+	mov rdx, qword [rbp + 8 * rsi + 8 * 4]
+	mov qword [rbx + 8 * rsi], rdx
+	inc rsi
+	jmp .L_lambda_simple_params_loop_0001
+.L_lambda_simple_params_end_0001:
+	mov qword [rax], rbx	; ext_env[0] <-- new_rib 
+	mov rbx, rax
+	pop rax
+	mov byte [rax], T_closure
+	mov SOB_CLOSURE_ENV(rax), rbx
+	mov SOB_CLOSURE_CODE(rax), .L_lambda_simple_code_0001
+	jmp .L_lambda_simple_end_0001
+.L_lambda_simple_code_0001:	; lambda-simple body
+	cmp qword [rsp + 8 * 2], 0
+	je .L_lambda_simple_arity_check_ok_0001
+	push qword [rsp + 8 * 2]
+	push 0
+	jmp L_error_incorrect_arity_simple
+.L_lambda_simple_arity_check_ok_0001:
+	enter 0, 0
+	mov rax, qword (L_constants + 3)
+	cmp rax, sob_boolean_false
+	je .L_if_else_0001
+.L_lambda_simple_arity_check_ok_0003:
+	mov rax, qword (L_constants + 23)
+	push rax
+	mov rax, qword (L_constants + 6)
 	push rax
 	push 2
-	mov rax, qword [free_var_56]
+	mov rax, qword [free_var_55]
+	cmp byte [rax], T_closure
+
+        jne L_code_ptr_error                      ; rax <- proc
+
+
+        mov rbx, SOB_CLOSURE_ENV(rax)             ; rbx <- env(proc)
+
+        push rbx                                  ; env pushed
+
+        push qword [ rbp + 8 * 1]                 ; old ret addr pushed
+
+        push qword [ rbp ]                        ; the same old rbp pushed
+
+        
+        mov r8, [ rbp + 3 * 8]                    ; r8 <- old_code_num_of_args_n
+
+        mov r9, [ rsp + 3 * 8 ]                   ; r9 <- new_code_num_of_args_m
+
+
+        mov r10, r9
+        add r10, 4                                ; total elemnts left to copy: num_of_args + 4 (num_of_args, lexenv retf, rbp in f)
+
+                                                       
+        mov r12, r8                               ; r12 <- index in new code
+        add r12, 4
+
+        mov r14, 0                                ; r14 <- 0 : init box: curr_arg_to_copy
+.L_tc_recycle_frame_loop_0002:
+mov r14, [rsp + (r10 * 8)]               ; r14 <- i_element_old_code
+
+        mov [rbp + (r10 * 8)], r14
+
+
+
+        mov r14, 0                                ; clean box
+
+
+                                
+        add r10, -1                               ; args_copied_counter--
+
+        add r12, -1 
+
+        cmp r10, 0                                ; element_copied_counter == 0 ?
+jne .L_tc_recycle_frame_loop_0002
+.L_tc_recycle_frame_done_0002:
+pop rbp                                  ; restore the old rbp
+
+        mov rbx, SOB_CLOSURE_CODE(rax)
+          ; rbx <- code(proc)
+
+        jmp rbx
+	jmp .L_if_end_0001
+	.L_if_else_0001:
+	.L_lambda_simple_arity_check_ok_0002:
+	mov rax, qword (L_constants + 57)
+	push rax
+	mov rax, qword (L_constants + 40)
+	push rax
+	push 2
+	mov rax, qword [free_var_55]
+	cmp byte [rax], T_closure
+
+        jne L_code_ptr_error                      ; rax <- proc
+
+
+        mov rbx, SOB_CLOSURE_ENV(rax)             ; rbx <- env(proc)
+
+        push rbx                                  ; env pushed
+
+        push qword [ rbp + 8 * 1]                 ; old ret addr pushed
+
+        push qword [ rbp ]                        ; the same old rbp pushed
+
+        
+        mov r8, [ rbp + 3 * 8]                    ; r8 <- old_code_num_of_args_n
+
+        mov r9, [ rsp + 3 * 8 ]                   ; r9 <- new_code_num_of_args_m
+
+
+        mov r10, r9
+        add r10, 4                                ; total elemnts left to copy: num_of_args + 4 (num_of_args, lexenv retf, rbp in f)
+
+                                                       
+        mov r12, r8                               ; r12 <- index in new code
+        add r12, 4
+
+        mov r14, 0                                ; r14 <- 0 : init box: curr_arg_to_copy
+.L_tc_recycle_frame_loop_0001:
+mov r14, [rsp + (r10 * 8)]               ; r14 <- i_element_old_code
+
+        mov [rbp + (r10 * 8)], r14
+
+
+
+        mov r14, 0                                ; clean box
+
+
+                                
+        add r10, -1                               ; args_copied_counter--
+
+        add r12, -1 
+
+        cmp r10, 0                                ; element_copied_counter == 0 ?
+jne .L_tc_recycle_frame_loop_0001
+.L_tc_recycle_frame_done_0001:
+pop rbp                                  ; restore the old rbp
+
+        mov rbx, SOB_CLOSURE_CODE(rax)
+          ; rbx <- code(proc)
+
+        jmp rbx
+	.L_if_end_0001:
+	leave
+	ret 8 * (2 + 0)
+.L_lambda_simple_end_0001:	; new closure is in rax
 	cmp byte [rax], T_closure 
         jne L_code_ptr_error
 
@@ -534,7 +677,9 @@ main:
         mov rsi, qword [top_of_memory]
         sub rsi, memory
         mov rax, 0
+	ENTER
         call printf
+	LEAVE
 	leave
 	ret
 
@@ -542,7 +687,9 @@ L_error_non_closure:
         mov rdi, qword [stderr]
         mov rsi, fmt_non_closure
         mov rax, 0
+	ENTER
         call fprintf
+	LEAVE
         mov rax, -2
         call exit
 
@@ -550,7 +697,9 @@ L_error_improper_list:
 	mov rdi, qword [stderr]
 	mov rsi, fmt_error_improper_list
 	mov rax, 0
+	ENTER
 	call fprintf
+	LEAVE
 	mov rax, -7
 	call exit
 
@@ -565,7 +714,9 @@ L_error_incorrect_arity_common:
         pop rdx
         pop rcx
         mov rax, 0
+	ENTER
         call fprintf
+	LEAVE
         mov rax, -6
         call exit
 
@@ -851,19 +1002,25 @@ print_sexpr:
 	push rdi
 	mov rdi, fmt_dotted_pair
 	mov rax, 0
+	ENTER
 	call printf
+	LEAVE
 	pop rdi
 	call print_sexpr
 	mov rdi, fmt_rparen
 	mov rax, 0
+	ENTER
 	call printf
+	LEAVE
 	LEAVE
 	ret
 
 .Lcdr_nil:
 	mov rdi, fmt_rparen
 	mov rax, 0
+	ENTER
 	call printf
+	LEAVE
 	LEAVE
 	ret
 
@@ -871,7 +1028,9 @@ print_sexpr:
 	push rdi
 	mov rdi, fmt_space
 	mov rax, 0
+	ENTER
 	call printf
+	LEAVE
 	mov rdi, qword [rsp]
 	mov rdi, SOB_PAIR_CAR(rdi)
 	call print_sexpr
@@ -886,7 +1045,9 @@ print_sexpr:
 	push rdi
 	mov rdi, fmt_vector
 	mov rax, 0
+	ENTER
 	call printf
+	LEAVE
 	mov rdi, qword [rsp]
 	push qword [rdi + 1]
 	push 1
@@ -901,7 +1062,9 @@ print_sexpr:
 	je .Lvector_end
 	mov rdi, fmt_space
 	mov rax, 0
+	ENTER
 	call printf
+	LEAVE
 	mov rax, qword [rsp]
 	mov rbx, qword [rsp + 8*2]
 	mov rdi, qword [rbx + 1 + 8 + 8 * rax] ; v[i]
@@ -1048,13 +1211,17 @@ print_sexpr:
 	mov rcx, rdi
 	mov rdi, qword [stderr]
 	mov rax, 0
+	ENTER
 	call fprintf
+	LEAVE
 	mov rax, -1
 	call exit
 
 .Lemit:
 	mov rax, 0
+	ENTER
 	call printf
+	LEAVE
 	jmp .Lend
 
 .Lend:
@@ -1076,155 +1243,72 @@ bind_primitive:
         LEAVE
         ret
 
-
-; L_code_ptr_bin_apply:
-        
+;;; PLEASE IMPLEMENT THIS PROCEDURE
+L_code_ptr_bin_apply:
 ;         ENTER
 ;         cmp COUNT, 2
 ;         jne L_error_arg_count_2
 
-;         mov rax, PARAM(0)       ; rax <- closure
-;         cmp byte [rax], T_closure ;  is it a closure? 
-;         jne L_error_non_closure ;; if not closure jmp kibinimat
+;         mov r11, 0                                              ; init args_counter with 0
 
+;         ;; push all args that in the list
+
+;         mov r9, qword PARAM(1)                                  ; r9 <- args_list
+;         ; assert_pair(r9)
+;         cmp byte [r9], T_nil 
+;         je .L_error_with_args_count
+
+
+;         assert_pair(r9)                                         ;
+;         mov rcx, qword SOB_PAIR_CAR(r9)                         ; rcx <- car(args_list)
+;         push rcx                                                ; push first arg to stack
+
+;         mov r11, (r11 +1)                                      ; increament args_counter
         
-;         ; handle cdr
-;         mov r9, qword PARAM(1)
+
 ;         assert_pair(r9)
-;         mov rcx, qword SOB_PAIR_CDR(r9)
-;         mov r10, qword rcx      ; r10 <- cdr
-;         assert_pair(r10)
-;         mov rcx, qword SOB_PAIR_CAR(r10)         ; rcx <- cadr
-;         ; push rcx                ; push rcx (cadr) ***
+;         mov rcx, qword SOB_PAIR_CDR(r9)                         ; rcx <- rest of the list
+;         mov r9, qword rcx                                       ; r9 <- rest of the list
+        
+;         cmp byte [r9], T_nil                                    ; check if rest of the list is empty
+;         je .L_error_with_args_count                             ; if empty go to args error, have to be at least 2
+        
+; .L_list_is_not_done:
 
-;         ; handle car
-;         mov r9, PARAM(1)   
 ;         assert_pair(r9)
-;         mov rcx, qword SOB_PAIR_CAR(r9)
-;         push rcx                ; push car
+;         mov rcx, qword SOB_PAIR_CAR(r9)                         ; rcx <- car of rest of the list
+;         push rcx                                                ; push arg
 
-;         ; handle  caddr (car (cdr (cdr list)))
-;         assert_pair(r10)
-;         mov rcx, qword SOB_PAIR_CDR(r10)
-;         mov r10, qword rcx      ; r10 <- cdr
-;         assert_pair(r10)
-;         mov rcx, qword SOB_PAIR_CAR(r10)
-;         push rcx
+;         mov r11, (r11 + 1)                                      ; args_counter++
+
+;         assert_pair(r9)
+;         mov rcx, qword SOB_PAIR_CDR(r9)                         ; rcx <- rest of rest of the list
+;         mov r9, qword rcx                                       ; r9 <- rest of rest of the list
+
+;         cmp byte [r9], T_nil                                    ; check if rest of the list is empty
+;         jne .L_list_is_not_done 
+
+; .L_list_is_done:
         
+;         push r11                                                ; push num_of_args
 
-;         mov rbx, 2
-;         push rbx
+;         ; invriant: r9 has the proc code
+;         mov r9, qword PARAM(0)                                  ; arg_proc to r9
+;         cmp byte [rax], T_closure                               ;  is it a closure? 
+;         jne L_error_non_closure                                 ; if not closure jmp kibinimat
 
-; 	cmp byte [rax], T_closure 
-;         jne L_code_ptr_error
-
-;         mov rbx, SOB_CLOSURE_ENV(rax)
-;         push rbx
-
-;         call SOB_CLOSURE_CODE(rax)
-
-; 	; mov rdi, rax
-; 	; call print_sexpr_if_not_void
-
-;         LEAVE
-;         ret AND_KILL_FRAME(2)
+;         mov r10, SOB_CLOSURE_ENV(r9)                            ; get proc env
+;         push r10                                                ; push closure env to stack
 
 
-L_code_ptr_bin_apply:
-        
-        ENTER
-        cmp COUNT, 2
-        jne L_error_arg_count_2
+;         ; ??? need to push retaddress, which is it ???
+;         ; ??? need to think about rbp ???
 
-        mov rax, PARAM(0)       ; rax <- closure
-        cmp byte [rax], T_closure ;  is it a closure? 
-        jne L_error_non_closure ;; if not closure jmp kibinimat
-
-        
-        ; handle cdr
-        mov r10, qword PARAM(1)
-        assert_pair(r10)
-        mov rcx, qword SOB_PAIR_CDR(r10)
-        mov r10, qword rcx      ; r10 <- cdr
-        assert_pair(r10)
-        mov rcx, qword SOB_PAIR_CAR(r10)         ; r11 <- cadr
-        mov r11, qword rcx
-        push rcx                ; push rcx (cadr) ***
-
-        ; handle car
-        mov r9, PARAM(1)   
-        assert_pair(r9)
-        mov rcx, qword SOB_PAIR_CAR(r9)
-        mov r9, qword rcx
-        push rcx                ; push car
-
-
-        
-        
-        mov rbx, 2
-        push rbx
-
-	cmp byte [rax], T_closure 
-        jne L_code_ptr_error
-
-        mov rbx, SOB_CLOSURE_ENV(rax)
-        push rbx
-
-        call SOB_CLOSURE_CODE(rax)
-
-        mov r9, qword rax
-
-	; mov rdi, rax
-	; call print_sexpr_if_not_void
-
-        ; if there are more args left in the list, go to list not done.
-        ; get rest of the list
-        ; r10 <- cdr already
-        assert_pair(r10)
-        mov rcx, qword SOB_PAIR_CDR(r10)
-        mov r10, qword rcx
-        cmp byte [r10], T_nil
-        je .L_list_is_done
-.L_list_not_done:
-        ; r9 <- result, r10 <- rest of the list, r11 <- not relevnt
-        assert_pair(r10)
-        mov rcx, qword SOB_PAIR_CAR(r10)
-        mov r11, qword rcx
-
-        ; r9 <- result, r10 <- rest of the list, r11 <- car(rest of the list)
-        push rcx
-        mov rcx, qword r9
-        push rcx
-        mov rbx, 2
-        push rbx
-
-        mov rax, PARAM(0)       ; rax <- closure
-        cmp byte [rax], T_closure ;  is it a closure? 
-        jne L_error_non_closure ;; if not closure jmp kibinimat
-
-        mov rbx, SOB_CLOSURE_ENV(rax)
-        push rbx
-
-        call SOB_CLOSURE_CODE(rax)  ; rax <- result
-                                        
-        mov r9, qword rax           ; r9 <- result
-
-                                ; set 10 to be the cdr of current list.
-        assert_pair(r10)
-        mov rcx, qword SOB_PAIR_CDR(r10)
-        mov r10, qword rcx
-        cmp byte [r10], T_nil   ; check if rest of the list is empty 
-        jne .L_list_not_done
-
-
-.L_list_is_done:                 ; salamat veyom tov neshama
-        LEAVE                    ; bye capara
-        ret AND_KILL_FRAME(2)    ; shelohim yishmor otcha amen
-
-
-
-
-
+;         ;get proc code and jmp
+;         mov r9, qword PARAM(0)                                  ; arg_proc to r9
+;         mov r10, SOB_CLOSURE_CODE(r9)
+;         jmp r10               
+	
 L_code_ptr_is_null:
         ENTER
         cmp COUNT, 1
@@ -1458,7 +1542,9 @@ L_code_ptr_write_char:
         mov rdi, fmt_char
         mov rsi, rax
         mov rax, 0
+	ENTER
         call printf
+	LEAVE
         mov rax, sob_void
         LEAVE
         ret AND_KILL_FRAME(1)
@@ -1859,12 +1945,16 @@ L_code_ptr_error:
         assert_string(rsi)
         mov rdi, fmt_scheme_error_part_1
         mov rax, 0
+	ENTER
         call printf
+	LEAVE
         mov rdi, PARAM(0)
         call print_sexpr
         mov rdi, fmt_scheme_error_part_2
         mov rax, 0
+	ENTER
         call printf
+	LEAVE
         mov rax, PARAM(1)       ; sob_string
         mov rsi, 1              ; size = 1 byte
         mov rdx, qword [rax + 1] ; length
@@ -1873,7 +1963,9 @@ L_code_ptr_error:
         call fwrite
         mov rdi, fmt_scheme_error_part_3
         mov rax, 0
+	ENTER
         call printf
+	LEAVE
         mov rax, -9
         call exit
 
@@ -1909,7 +2001,7 @@ L_code_ptr_raw_less_than_qq:
         cqo
         imul qword [rdi + 1 + 8] ; den2
         mov rcx, rax
-        mov rax, qword [rdi + 1 + 8] ; den1
+        mov rax, qword [rsi + 1 + 8] ; den1
         cqo
         imul qword [rdi + 1]          ; num2
         sub rcx, rax
@@ -2259,7 +2351,9 @@ L_error_integer_range:
         mov rdi, qword [stderr]
         mov rsi, fmt_integer_range
         mov rax, 0
+	ENTER
         call fprintf
+	LEAVE
         mov rax, -5
         call exit
 
@@ -2268,7 +2362,9 @@ L_error_arg_count_0:
         mov rsi, fmt_arg_count_0
         mov rdx, COUNT
         mov rax, 0
+	ENTER
         call fprintf
+	LEAVE
         mov rax, -3
         call exit
 
@@ -2277,7 +2373,9 @@ L_error_arg_count_1:
         mov rsi, fmt_arg_count_1
         mov rdx, COUNT
         mov rax, 0
+	ENTER
         call fprintf
+	LEAVE
         mov rax, -3
         call exit
 
@@ -2286,7 +2384,9 @@ L_error_arg_count_2:
         mov rsi, fmt_arg_count_2
         mov rdx, COUNT
         mov rax, 0
+	ENTER
         call fprintf
+	LEAVE
         mov rax, -3
         call exit
 
@@ -2295,16 +2395,9 @@ L_error_arg_count_12:
         mov rsi, fmt_arg_count_12
         mov rdx, COUNT
         mov rax, 0
+	ENTER
         call fprintf
-        mov rax, -3
-        call exit
-
-L_sagy_debug:
-        mov rdi, qword [stderr]
-        mov rsi, fmt_sagy_debug
-        mov rdx, COUNT
-        mov rax, 0
-        call fprintf
+	LEAVE
         mov rax, -3
         call exit
 
@@ -2313,7 +2406,9 @@ L_error_arg_count_3:
         mov rsi, fmt_arg_count_3
         mov rdx, COUNT
         mov rax, 0
+	ENTER
         call fprintf
+	LEAVE
         mov rax, -3
         call exit
         
@@ -2321,7 +2416,9 @@ L_error_incorrect_type:
         mov rdi, qword [stderr]
         mov rsi, fmt_type
         mov rax, 0
+	ENTER
         call fprintf
+	LEAVE
         mov rax, -4
         call exit
 
@@ -2329,7 +2426,9 @@ L_error_division_by_zero:
         mov rdi, qword [stderr]
         mov rsi, fmt_division_by_zero
         mov rax, 0
+	ENTER
         call fprintf
+	LEAVE
         mov rax, -8
         call exit
 
@@ -2342,8 +2441,6 @@ fmt_arg_count_1:
         db `!!! Expecting one argument. Found %d\n\0`
 fmt_arg_count_12:
         db `!!! Expecting one required and one optional argument. Found %d\n\0`
-fmt_sagy_debug:
-        db `!!! **** SAGY DEBUG **** %d\n\0`
 fmt_arg_count_2:
         db `!!! Expecting two arguments. Found %d\n\0`
 fmt_arg_count_3:
