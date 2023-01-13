@@ -80,10 +80,12 @@ L_constants:
 	db T_boolean_false
 	db T_boolean_true
 	db T_char, 0x00	; #\x0
+	db T_rational	; 1
+	dq 1, 1
 	db T_rational	; 2
 	dq 2, 1
-	db T_rational	; 47
-	dq 47, 1
+	db T_rational	; 3
+	dq 3, 1
 
 section .bss
 free_var_0:	; location of null?
@@ -485,11 +487,13 @@ main:
 	mov rsi, L_code_ptr_eq
 	call bind_primitive
 
-	mov rax, qword (L_constants + 23)
+	mov rax, qword (L_constants + 40)
 	push rax
 	mov rax, qword (L_constants + 23)
 	push rax
-	push 2
+	mov rax, qword (L_constants + 6)
+	push rax
+	push 3
 	mov rdi, (1 + 8 + 8)	; sob closure
 	call malloc
 	push rax
@@ -501,51 +505,88 @@ main:
 	mov rdi, ENV
 	mov rsi, 0
 	mov rdx, 1
-.L_lambda_simple_env_loop_0001:	; ext_env[i + 1] <-- env[i]
+.L_lambda_opt_env_loop_0001:	; ext_env[i + 1] <-- env[i]
 	cmp rsi, 0
-	je .L_lambda_simple_env_end_0001
+	je .L_lambda_opt_env_end_0001
 	mov rcx, qword [rdi + 8 * rsi]
 	mov qword [rax + 8 * rdx], rcx
 	inc rsi
 	inc rdx
-	jmp .L_lambda_simple_env_loop_0001
-.L_lambda_simple_env_end_0001:
+	jmp .L_lambda_opt_env_loop_0001
+.L_lambda_opt_env_end_0001:
 	pop rbx
 	mov rsi, 0
-.L_lambda_simple_params_loop_0001:	; copy params
+.L_lambda_opt_params_loop_0001:	; copy params
 	cmp rsi, 0
-	je .L_lambda_simple_params_end_0001
+	je .L_lambda_opt_params_end_0001
 	mov rdx, qword [rbp + 8 * rsi + 8 * 4]
 	mov qword [rbx + 8 * rsi], rdx
 	inc rsi
-	jmp .L_lambda_simple_params_loop_0001
-.L_lambda_simple_params_end_0001:
+	jmp .L_lambda_opt_params_loop_0001
+.L_lambda_opt_params_end_0001:
 	mov qword [rax], rbx	; ext_env[0] <-- new_rib 
 	mov rbx, rax
 	pop rax
 	mov byte [rax], T_closure
 	mov SOB_CLOSURE_ENV(rax), rbx
-	mov SOB_CLOSURE_CODE(rax), .L_lambda_simple_code_0001
-	jmp .L_lambda_simple_end_0001
-.L_lambda_simple_code_0001:	; lambda-simple body
-	cmp qword [rsp + 8 * 2], 2
-	je .L_lambda_simple_arity_check_ok_0001
-	push qword [rsp + 8 * 2]
-	push 2
-	jmp L_error_incorrect_arity_simple
-.L_lambda_simple_arity_check_ok_0001:
-	enter 0, 0
+	mov SOB_CLOSURE_CODE(rax), .L_lambda_opt_code_0001
+	jmp .L_lambda_opt_end_0001
+.L_lambda_opt_code_0001:
+mov r10, qword [rsp+8*2]
+cmp r10, 1
+je .L_lambda_opt_arity_check_exact_0001
+cmp r10, 1
+jg .L_lambda_opt_arity_check_more_0001
+jmp L_error_incorrect_arity_opt
+.L_lambda_opt_arity_check_exact_0001:
+sub rsp, 8
+mov rdx, 3+1
+mov qword rbx, rsp
+.L_lambda_opt_params_loop_0002:
+mov qword rcx, [rbx+8]
+mov qword [rbx], rcx
+dec rdx
+add rbx, 8
+cmp rdx, 0
+je .L_lambda_opt_params_end_0002
+jmp .L_lambda_opt_params_loop_0002
+.L_lambda_opt_params_end_0002:
+inc r10
+mov qword [rsp+8*2], r10
+add r10, 2
+mov qword [rsp + 8*(r10)], sob_nil
+mov r9, [rbp]
+jmp .L_lambda_opt_stack_adjusted_0001
+.L_lambda_opt_arity_check_more_0001:
+mov rax, sob_nil
+mov r10, [rsp+2*8]
+lea r8, [rsp+ 8*(2+r10)]
+sub r10, 1
+.L_lambda_opt_stack_shrink_loop_0001:
+cmp r10, 0
+je .L_lambda_opt_stack_shrink_loop_exit_0001
+mov rcx, rax
+mov rdx, [r8]
+mov rdi, 17
+call malloc
+mov byte [rax], T_pair
+mov SOB_PAIR_CDR(rax), rcx
+mov SOB_PAIR_CAR(rax), rdx
+sub r8, 8
+dec r10
+jmp .L_lambda_opt_stack_shrink_loop_0001
+.L_lambda_opt_stack_shrink_loop_exit_0001:
+mov [rsp+8*(2+2)], rax
+mov r10, 2
+mov [rsp+16], r10
+.L_lambda_opt_stack_adjusted_0001:
+mov r9, [rbp]
+enter 0, 0
 mov rax, qword [rbp + 32]
-	cmp rax, sob_boolean_false
-	je .L_if_else_0001
-mov rax, qword [rbp + 40]
-	jmp .L_if_end_0001
-	.L_if_else_0001:
-		mov rax, qword (L_constants + 6)
-	.L_if_end_0001:
-	leave
-	ret 8 * (2 + 2)
-.L_lambda_simple_end_0001:	; new closure is in rax
+leave
+mov r9, [rbp]
+ret 8 * (3 + 2)
+.L_lambda_opt_end_0001:	; new closure is in rax
 	cmp byte [rax], T_closure 
         jne L_code_ptr_error
 
