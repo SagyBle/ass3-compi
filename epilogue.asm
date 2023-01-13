@@ -3,7 +3,9 @@
         mov rsi, qword [top_of_memory]
         sub rsi, memory
         mov rax, 0
+	ENTER
         call printf
+	LEAVE
 	leave
 	ret
 
@@ -11,7 +13,9 @@ L_error_non_closure:
         mov rdi, qword [stderr]
         mov rsi, fmt_non_closure
         mov rax, 0
+	ENTER
         call fprintf
+	LEAVE
         mov rax, -2
         call exit
 
@@ -19,7 +23,9 @@ L_error_improper_list:
 	mov rdi, qword [stderr]
 	mov rsi, fmt_error_improper_list
 	mov rax, 0
+	ENTER
 	call fprintf
+	LEAVE
 	mov rax, -7
 	call exit
 
@@ -34,7 +40,9 @@ L_error_incorrect_arity_common:
         pop rdx
         pop rcx
         mov rax, 0
+	ENTER
         call fprintf
+	LEAVE
         mov rax, -6
         call exit
 
@@ -320,19 +328,25 @@ print_sexpr:
 	push rdi
 	mov rdi, fmt_dotted_pair
 	mov rax, 0
+	ENTER
 	call printf
+	LEAVE
 	pop rdi
 	call print_sexpr
 	mov rdi, fmt_rparen
 	mov rax, 0
+	ENTER
 	call printf
+	LEAVE
 	LEAVE
 	ret
 
 .Lcdr_nil:
 	mov rdi, fmt_rparen
 	mov rax, 0
+	ENTER
 	call printf
+	LEAVE
 	LEAVE
 	ret
 
@@ -340,7 +354,9 @@ print_sexpr:
 	push rdi
 	mov rdi, fmt_space
 	mov rax, 0
+	ENTER
 	call printf
+	LEAVE
 	mov rdi, qword [rsp]
 	mov rdi, SOB_PAIR_CAR(rdi)
 	call print_sexpr
@@ -355,7 +371,9 @@ print_sexpr:
 	push rdi
 	mov rdi, fmt_vector
 	mov rax, 0
+	ENTER
 	call printf
+	LEAVE
 	mov rdi, qword [rsp]
 	push qword [rdi + 1]
 	push 1
@@ -370,7 +388,9 @@ print_sexpr:
 	je .Lvector_end
 	mov rdi, fmt_space
 	mov rax, 0
+	ENTER
 	call printf
+	LEAVE
 	mov rax, qword [rsp]
 	mov rbx, qword [rsp + 8*2]
 	mov rdi, qword [rbx + 1 + 8 + 8 * rax] ; v[i]
@@ -517,13 +537,17 @@ print_sexpr:
 	mov rcx, rdi
 	mov rdi, qword [stderr]
 	mov rax, 0
+	ENTER
 	call fprintf
+	LEAVE
 	mov rax, -1
 	call exit
 
 .Lemit:
 	mov rax, 0
+	ENTER
 	call printf
+	LEAVE
 	jmp .Lend
 
 .Lend:
@@ -545,99 +569,71 @@ bind_primitive:
         LEAVE
         ret
 
-; ; PLEASE IMPLEMENT THIS PROCEDURE
-; L_code_ptr_bin_apply:
-        
-;         ENTER
-;         cmp COUNT, 3
-;         jne L_error_arg_count_3
-
-;         mov rax, PARAM(0)       ; rax <- closure
-;         cmp byte [rax], T_closure ;  is it a closure? 
-;         jne L_error_non_closure ;; if not closure jmp kibinimat
-;         ;; make sure it is a closure                
-
-;         ;; goal to apply closure on 2 params
-;         mov rbx, qword PARAM(2)
-;         push rbx                ; push arg push 12
-;         mov rcx, qword PARAM(1)
-;         push rcx                ; push arg push '(69 70)
-        
-;         mov rbx, 2
-;         push rbx
-
-; 	cmp byte [rax], T_closure 
-;         jne L_code_ptr_error
-
-;         mov rbx, SOB_CLOSURE_ENV(rax)
-;         push rbx
-
-;         call SOB_CLOSURE_CODE(rax)
-
-; 	; mov rdi, rax
-; 	; call print_sexpr_if_not_void
-
-;         LEAVE
-;         ret AND_KILL_FRAME(3)
-
+;;; PLEASE IMPLEMENT THIS PROCEDURE
 L_code_ptr_bin_apply:
-        
-        ENTER
-        cmp COUNT, 2
-        jne L_error_arg_count_2
-
-        mov rax, PARAM(0)       ; rax <- closure
-        cmp byte [rax], T_closure ;  is it a closure? 
-        jne L_error_non_closure ;; if not closure jmp kibinimat
-        ;; make sure it is a closure
-
-        
-                    
-
-        ;; goal to apply closure on 2 params
-        mov r9, qword PARAM(1)
-        assert_pair(r9)
-        mov rcx, qword SOB_PAIR_CDR(r9)
-        mov r9, qword rcx
-        assert_pair(r9)
-        mov rcx, qword SOB_PAIR_CAR(r9)
-        push rcx
-
-
-        mov r9, PARAM(1)   ; car of the pair in the stack
-        assert_pair(r9)
-        mov rcx, qword SOB_PAIR_CAR(r9)
-        push rcx
-
-        
-        mov rbx, 2
-        push rbx
-
-	cmp byte [rax], T_closure 
-        jne L_code_ptr_error
-
-        mov rbx, SOB_CLOSURE_ENV(rax)
-        push rbx
-
-        call SOB_CLOSURE_CODE(rax)
-
-	; mov rdi, rax
-	; call print_sexpr_if_not_void
-
-        LEAVE
-        ret AND_KILL_FRAME(2)
-
-; L_code_ptr_bin_apply:
 ;         ENTER
-;         cmp COUNT, 1
-;         jne L_error_arg_count_1
-;         mov r9, PARAM(0)
+;         cmp COUNT, 2
+;         jne L_error_arg_count_2
+
+;         mov r11, 0                                              ; init args_counter with 0
+
+;         ;; push all args that in the list
+
+;         mov r9, qword PARAM(1)                                  ; r9 <- args_list
+;         ; assert_pair(r9)
+;         cmp byte [r9], T_nil 
+;         je .L_error_with_args_count
+
+
+;         assert_pair(r9)                                         ;
+;         mov rcx, qword SOB_PAIR_CAR(r9)                         ; rcx <- car(args_list)
+;         push rcx                                                ; push first arg to stack
+
+;         mov r11, (r11 +1)                                      ; increament args_counter
+        
+
 ;         assert_pair(r9)
-;         mov rax, SOB_PAIR_CAR(r9)
-;         LEAVE
-;         ret AND_KILL_FRAME(1)
+;         mov rcx, qword SOB_PAIR_CDR(r9)                         ; rcx <- rest of the list
+;         mov r9, qword rcx                                       ; r9 <- rest of the list
+        
+;         cmp byte [r9], T_nil                                    ; check if rest of the list is empty
+;         je .L_error_with_args_count                             ; if empty go to args error, have to be at least 2
+        
+; .L_list_is_not_done:
+
+;         assert_pair(r9)
+;         mov rcx, qword SOB_PAIR_CAR(r9)                         ; rcx <- car of rest of the list
+;         push rcx                                                ; push arg
+
+;         mov r11, (r11 + 1)                                      ; args_counter++
+
+;         assert_pair(r9)
+;         mov rcx, qword SOB_PAIR_CDR(r9)                         ; rcx <- rest of rest of the list
+;         mov r9, qword rcx                                       ; r9 <- rest of rest of the list
+
+;         cmp byte [r9], T_nil                                    ; check if rest of the list is empty
+;         jne .L_list_is_not_done 
+
+; .L_list_is_done:
+        
+;         push r11                                                ; push num_of_args
+
+;         ; invriant: r9 has the proc code
+;         mov r9, qword PARAM(0)                                  ; arg_proc to r9
+;         cmp byte [rax], T_closure                               ;  is it a closure? 
+;         jne L_error_non_closure                                 ; if not closure jmp kibinimat
+
+;         mov r10, SOB_CLOSURE_ENV(r9)                            ; get proc env
+;         push r10                                                ; push closure env to stack
 
 
+;         ; ??? need to push retaddress, which is it ???
+;         ; ??? need to think about rbp ???
+
+;         ;get proc code and jmp
+;         mov r9, qword PARAM(0)                                  ; arg_proc to r9
+;         mov r10, SOB_CLOSURE_CODE(r9)
+;         jmp r10               
 	
 L_code_ptr_is_null:
         ENTER
@@ -872,7 +868,9 @@ L_code_ptr_write_char:
         mov rdi, fmt_char
         mov rsi, rax
         mov rax, 0
+	ENTER
         call printf
+	LEAVE
         mov rax, sob_void
         LEAVE
         ret AND_KILL_FRAME(1)
@@ -1273,12 +1271,16 @@ L_code_ptr_error:
         assert_string(rsi)
         mov rdi, fmt_scheme_error_part_1
         mov rax, 0
+	ENTER
         call printf
+	LEAVE
         mov rdi, PARAM(0)
         call print_sexpr
         mov rdi, fmt_scheme_error_part_2
         mov rax, 0
+	ENTER
         call printf
+	LEAVE
         mov rax, PARAM(1)       ; sob_string
         mov rsi, 1              ; size = 1 byte
         mov rdx, qword [rax + 1] ; length
@@ -1287,7 +1289,9 @@ L_code_ptr_error:
         call fwrite
         mov rdi, fmt_scheme_error_part_3
         mov rax, 0
+	ENTER
         call printf
+	LEAVE
         mov rax, -9
         call exit
 
@@ -1323,7 +1327,7 @@ L_code_ptr_raw_less_than_qq:
         cqo
         imul qword [rdi + 1 + 8] ; den2
         mov rcx, rax
-        mov rax, qword [rdi + 1 + 8] ; den1
+        mov rax, qword [rsi + 1 + 8] ; den1
         cqo
         imul qword [rdi + 1]          ; num2
         sub rcx, rax
@@ -1673,7 +1677,9 @@ L_error_integer_range:
         mov rdi, qword [stderr]
         mov rsi, fmt_integer_range
         mov rax, 0
+	ENTER
         call fprintf
+	LEAVE
         mov rax, -5
         call exit
 
@@ -1682,7 +1688,9 @@ L_error_arg_count_0:
         mov rsi, fmt_arg_count_0
         mov rdx, COUNT
         mov rax, 0
+	ENTER
         call fprintf
+	LEAVE
         mov rax, -3
         call exit
 
@@ -1691,7 +1699,9 @@ L_error_arg_count_1:
         mov rsi, fmt_arg_count_1
         mov rdx, COUNT
         mov rax, 0
+	ENTER
         call fprintf
+	LEAVE
         mov rax, -3
         call exit
 
@@ -1700,7 +1710,9 @@ L_error_arg_count_2:
         mov rsi, fmt_arg_count_2
         mov rdx, COUNT
         mov rax, 0
+	ENTER
         call fprintf
+	LEAVE
         mov rax, -3
         call exit
 
@@ -1709,16 +1721,9 @@ L_error_arg_count_12:
         mov rsi, fmt_arg_count_12
         mov rdx, COUNT
         mov rax, 0
+	ENTER
         call fprintf
-        mov rax, -3
-        call exit
-
-L_sagy_debug:
-        mov rdi, qword [stderr]
-        mov rsi, fmt_sagy_debug
-        mov rdx, COUNT
-        mov rax, 0
-        call fprintf
+	LEAVE
         mov rax, -3
         call exit
 
@@ -1727,7 +1732,9 @@ L_error_arg_count_3:
         mov rsi, fmt_arg_count_3
         mov rdx, COUNT
         mov rax, 0
+	ENTER
         call fprintf
+	LEAVE
         mov rax, -3
         call exit
         
@@ -1735,7 +1742,9 @@ L_error_incorrect_type:
         mov rdi, qword [stderr]
         mov rsi, fmt_type
         mov rax, 0
+	ENTER
         call fprintf
+	LEAVE
         mov rax, -4
         call exit
 
@@ -1743,7 +1752,9 @@ L_error_division_by_zero:
         mov rdi, qword [stderr]
         mov rsi, fmt_division_by_zero
         mov rax, 0
+	ENTER
         call fprintf
+	LEAVE
         mov rax, -8
         call exit
 
@@ -1756,8 +1767,6 @@ fmt_arg_count_1:
         db `!!! Expecting one argument. Found %d\n\0`
 fmt_arg_count_12:
         db `!!! Expecting one required and one optional argument. Found %d\n\0`
-fmt_sagy_debug:
-        db `!!! **** SAGY DEBUG **** %d\n\0`
 fmt_arg_count_2:
         db `!!! Expecting two arguments. Found %d\n\0`
 fmt_arg_count_3:

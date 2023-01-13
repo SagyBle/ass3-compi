@@ -1482,23 +1482,23 @@ let should_box_var name expr params =
          | _, _ -> ScmSeq'(new_sets @ [new_body]) in
        ScmLambda' (params, Simple, new_body)
     | ScmLambda' (params, Opt opt, expr') ->
-      let params = params@[opt] in
-      let box_these =
-         List.filter
-           (fun param -> should_box_var param expr' params)
-           params in
-       let new_body = 
-         List.fold_left
-           (fun body name -> box_sets_and_gets name body)
-           (auto_box expr')
-           box_these in
-       let new_sets = make_sets box_these params in
-       let new_body = 
-         match box_these, new_body with
-         | [], _ -> new_body
-         | _, ScmSeq' exprs -> ScmSeq' (new_sets @ exprs)
-         | _, _ -> ScmSeq'(new_sets @ [new_body]) in
-       ScmLambda' (params, Opt opt, new_body)
+    let params_opt = params@[opt] in
+    let box_these =
+        List.filter
+          (fun param -> should_box_var param expr' params_opt)
+          params_opt in
+      let new_body = 
+        List.fold_left
+          (fun body name -> box_sets_and_gets name body)
+          (auto_box expr')
+          box_these in
+      let new_sets = make_sets box_these params_opt in
+      let new_body = 
+        match box_these, new_body with
+        | [], _ -> new_body
+        | _, ScmSeq' exprs -> ScmSeq' (new_sets @ exprs)
+        | _, _ -> ScmSeq'(new_sets @ [new_body]) in
+      ScmLambda' (params, Opt opt, new_body)
     | ScmApplic' (proc, args, app_kind) ->
        ScmApplic' (auto_box proc, List.map auto_box args, app_kind);;
 
@@ -2262,12 +2262,11 @@ module Semantic_Analysis : SEMANTIC_ANALYSIS = struct
     run expr [] [];;
 (* *** *)
   (* run this second *)
-(* let annotate_tail_calls =  *)
 let annotate_tail_calls = 
 
-    (* let rec run in_tail = function *)
+    let rec run in_tail = function
       
-      (* | (ScmConst' _) as orig -> orig
+      | (ScmConst' _) as orig -> orig
       | (ScmVarGet' _) as orig -> orig
       | ScmIf' (test, dit, dif) -> ScmIf'(run false test, run in_tail dit, run in_tail dif)
       | ScmSeq' [] as orig -> orig
@@ -2293,9 +2292,10 @@ let annotate_tail_calls =
       | [] -> [run in_tail expr]
       | expr' :: exprs -> (run false expr) :: (runl in_tail expr' exprs)
       in
-    fun expr' -> run false expr';; *)
-    fun expr' -> expr';;
+    fun expr' -> run false expr';;
 
+
+  
   (* auto_box *)
 
   let copy_list = List.map (fun si -> si);;
@@ -2480,23 +2480,23 @@ let should_box_var name expr params =
          | _, _ -> ScmSeq'(new_sets @ [new_body]) in
        ScmLambda' (params, Simple, new_body)
     | ScmLambda' (params, Opt opt, expr') ->
-      let params = params@[opt] in
-      let box_these =
-         List.filter
-           (fun param -> should_box_var param expr' params)
-           params in
-       let new_body = 
-         List.fold_left
-           (fun body name -> box_sets_and_gets name body)
-           (auto_box expr')
-           box_these in
-       let new_sets = make_sets box_these params in
-       let new_body = 
-         match box_these, new_body with
-         | [], _ -> new_body
-         | _, ScmSeq' exprs -> ScmSeq' (new_sets @ exprs)
-         | _, _ -> ScmSeq'(new_sets @ [new_body]) in
-       ScmLambda' (params, Opt opt, new_body)
+    let params_opt = params@[opt] in
+    let box_these =
+        List.filter
+          (fun param -> should_box_var param expr' params_opt)
+          params_opt in
+      let new_body = 
+        List.fold_left
+          (fun body name -> box_sets_and_gets name body)
+          (auto_box expr')
+          box_these in
+      let new_sets = make_sets box_these params_opt in
+      let new_body = 
+        match box_these, new_body with
+        | [], _ -> new_body
+        | _, ScmSeq' exprs -> ScmSeq' (new_sets @ exprs)
+        | _, _ -> ScmSeq'(new_sets @ [new_body]) in
+      ScmLambda' (params, Opt opt, new_body)
     | ScmApplic' (proc, args, app_kind) ->
        ScmApplic' (auto_box proc, List.map auto_box args, app_kind);;
 
