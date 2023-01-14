@@ -766,3 +766,71 @@ tail call
 
 
         13.1.23 16:19
+
+
+
+;;; PLEASE IMPLEMENT THIS PROCEDURE
+L_code_ptr_bin_apply:
+        ENTER
+        cmp COUNT, 2
+        jne L_error_arg_count_2
+
+        mov r11, 0                                              ; init args_counter with 0
+
+        ;; push all args that in the list
+
+        mov r9, qword PARAM(1)                                  ; r9 <- args_list
+        ; assert_pair(r9)
+        cmp byte [r9], T_nil 
+        je .L_error_with_args_count
+
+
+        assert_pair(r9)                                         ;
+        mov rcx, qword SOB_PAIR_CAR(r9)                         ; rcx <- car(args_list)
+        push rcx                                                ; push first arg to stack
+
+        mov r11, (r11 +1)                                      ; increament args_counter
+        
+
+        assert_pair(r9)
+        mov rcx, qword SOB_PAIR_CDR(r9)                         ; rcx <- rest of the list
+        mov r9, qword rcx                                       ; r9 <- rest of the list
+        
+        cmp byte [r9], T_nil                                    ; check if rest of the list is empty
+        je .L_error_with_args_count                             ; if empty go to args error, have to be at least 2
+        
+.L_list_is_not_done:
+
+        assert_pair(r9)
+        mov rcx, qword SOB_PAIR_CAR(r9)                         ; rcx <- car of rest of the list
+        push rcx                                                ; push arg
+
+        mov r11, (r11 + 1)                                      ; args_counter++
+
+        assert_pair(r9)
+        mov rcx, qword SOB_PAIR_CDR(r9)                         ; rcx <- rest of rest of the list
+        mov r9, qword rcx                                       ; r9 <- rest of rest of the list
+
+        cmp byte [r9], T_nil                                    ; check if rest of the list is empty
+        jne .L_list_is_not_done 
+
+.L_list_is_done:
+        
+        push r11                                                ; push num_of_args
+
+        ; invriant: r9 has the proc code
+        mov r9, qword PARAM(0)                                  ; arg_proc to r9
+        cmp byte [rax], T_closure                               ;  is it a closure? 
+        jne L_error_non_closure                                 ; if not closure jmp kibinimat
+
+        mov r10, SOB_CLOSURE_ENV(r9)                            ; get proc env
+        push r10                                                ; push closure env to stack
+
+
+        ; ??? need to push retaddress, which is it ???
+        ; ??? need to think about rbp ???
+
+        ;get proc code and jmp
+        mov r9, qword PARAM(0)                                  ; arg_proc to r9
+        mov r10, SOB_CLOSURE_CODE(r9)
+        jmp r10    
