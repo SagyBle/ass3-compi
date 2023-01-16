@@ -629,6 +629,179 @@ L_code_ptr_bin_apply:
 
 
 
+
+; L_code_ptr_bin_apply:
+;         ENTER
+;         cmp COUNT, 2
+;         jne L_error_arg_count_2
+
+;         mov r8, 0                                       ;; r8 <- list_of_args init 
+;         mov r9, 0                                       ; r9 <- car(list) init 
+;         mov r10, 0                                      ; r10 <- cdr (list) init 
+;         mov r11, 0                                      ;; r11 <- args_counter init               
+;         mov r12, 0                                      ;; r12 <- proc init
+;         mov r13, 0                                      ; r13 <- proc.lex_env / proc.code init
+;         mov r14, 0                                      ;; r14 <- return address init
+;         mov r15, 0                                      ;; r15 <- old_rbp init
+
+
+;         mov r8, qword PARAM(1)                          ; r8 <- list_of_args
+;         assert_pair(r8)
+
+;         cmp byte [r8], T_nil 
+;         je .L_error_with_args_count                     ; list.length == 0 ?\
+
+;         mov r11, qword COUNT                            ; r11 <- args_counter
+
+;         pop rcx
+;         pop rcx
+;         pop rcx
+;         pop rcx                                         ; clean
+
+
+
+
+; .L_list_of_args_not_empty_yet:
+
+;         *assert_pair(r8)
+;         *mov r9, qword SOB_PAIR_CAR(r8)                  ; r9 <- car(list)
+;         *push r9                                         ; push curr_arg
+;         *add r11, 1                                      ; args_counter ++
+
+;         *mov r10, qword SOB_PAIR_CDR(r8)                 
+;         *mov r8, qword r10                               ; r8 <- cdr(list)
+
+;         *assert_pair(r8)                                 
+;         *cmp byte [r8], T_nil                            ; rest of the list is empty?
+;         *jne .L_list_of_args_not_empty_yet               
+
+; .L_list_of_args_totally_pushed:
+;         *push r11                                        ; push args_counter
+        
+;         *mov r12, qword PARAM(0)                         ; r12 <- proc
+;         *cmp byte [rax], T_closure
+;         *jne L_error_non_closure 
+
+;         mov r13, SOB_CLOSURE_ENV(r12)                   ; r13 <- proc.env
+;         push r13
+
+
+
+
+
+
+;         mov r13, 0
+;         mov r13, SOB_CLOSURE_CODE(r12)                  ; r13 <- proc.code
+
+;         jmp r13                                         ; jmp to code
+
+;         mov r15, qword OLD_RDP                          ; r15 <- old_rbp
+
+;         pop rcx
+;         pop rcx
+;         pop rcx
+;         pop rcx                                         ; clean
+
+
+
+
+; .L_list_of_args_not_empty_yet:
+
+;         *assert_pair(r8)
+;         *mov r9, qword SOB_PAIR_CAR(r8)                  ; r9 <- car(list)
+;         *push r9                                         ; push curr_arg
+;         *add r11, 1                                      ; args_counter ++
+
+;         *mov r10, qword SOB_PAIR_CDR(r8)                 
+;         *mov r8, qword r10                               ; r8 <- cdr(list)
+
+;         *assert_pair(r8)                                 
+;         *cmp byte [r8], T_nil                            ; rest of the list is empty?
+;         *jne .L_list_of_args_not_empty_yet               
+
+; .L_list_of_args_totally_pushed:
+;         *push r11                                        ; push args_counter
+        
+;         *mov r12, qword PARAM(0)                         ; r12 <- proc
+;         *cmp byte [rax], T_closure
+;         *jne L_error_non_closure 
+
+;         mov r13, SOB_CLOSURE_ENV(r12)                   ; r13 <- proc.env
+;         push r13
+
+
+
+
+
+
+;         mov r13, 0
+;         mov r13, SOB_CLOSURE_CODE(r12)                  ; r13 <- proc.code
+
+;         jmp r13                                         ; jmp to code
+
+;         ENTER
+;         cmp COUNT, 2
+;         jne L_error_arg_count_2
+
+;         mov r11, 0                                              ; init args_counter with 0
+
+;         ;; push all args that in the list
+
+;         mov r9, qword PARAM(1)                                  ; r9 <- args_list
+;         ; assert_pair(r9)
+;         cmp byte [r9], T_nil 
+;         je .L_error_with_args_count
+
+
+;         assert_pair(r9)                                         ;
+;         mov rcx, qword SOB_PAIR_CAR(r9)                         ; rcx <- car(args_list)
+;         push rcx                                                ; push first arg to stack
+
+;         mov r11, (r11 +1)                                      ; increament args_counter
+        
+
+;         assert_pair(r9)
+;         mov rcx, qword SOB_PAIR_CDR(r9)                         ; rcx <- rest of the list
+;         mov r9, qword rcx                                       ; r9 <- rest of the list
+        
+;         cmp byte [r9], T_nil                                    ; check if rest of the list is empty
+;         je .L_error_with_args_count                             ; if empty go to args error, have to be at least 2
+        
+; .L_list_is_not_done:
+
+;         assert_pair(r9)
+;         mov rcx, qword SOB_PAIR_CAR(r9)                         ; rcx <- car of rest of the list
+;         push rcx                                                ; push arg
+
+;         mov r11, (r11 + 1)                                      ; args_counter++
+
+;         assert_pair(r9)
+;         mov rcx, qword SOB_PAIR_CDR(r9)                         ; rcx <- rest of rest of the list
+;         mov r9, qword rcx                                       ; r9 <- rest of rest of the list
+
+;         cmp byte [r9], T_nil                                    ; check if rest of the list is empty
+;         jne .L_list_is_not_done 
+
+; .L_list_is_done:
+        
+;         push r11                                                ; push num_of_args
+
+;         ; invriant: r9 has the proc code
+;         mov r9, qword PARAM(0)                                  ; arg_proc to r9
+;         cmp byte [rax], T_closure                               ;  is it a closure? 
+;         jne L_error_non_closure                                 ; if not closure jmp kibinimat
+
+;         mov r10, SOB_CLOSURE_ENV(r9)                            ; get proc env
+;         push r10                                                ; push closure env to stack
+
+
+;         ; ??? need to push retaddress, which is it ???
+;         ; ??? need to think about rbp ???
+
+;         ;get proc code and jmp
+;         mov r9, qword PARAM(0)                                  ; arg_proc to r9
+;         mov r10, SOB_CLOSURE_CODE(r9)
+;         jmp r10               
 	
 L_code_ptr_is_null:
         ENTER
