@@ -80,14 +80,25 @@ L_constants:
 	db T_boolean_false
 	db T_boolean_true
 	db T_char, 0x00	; #\x0
-	db T_rational	; 2
-	dq 2, 1
+	db T_string	; "a"
+	dq 1
+	db 0x61
+	db T_symbol	; a
+	dq L_constants + 6
+	db T_string	; "new"
+	dq 3
+	db 0x6E, 0x65, 0x77
+	db T_symbol	; new
+	dq L_constants + 25
+	db T_string	; "list"
+	dq 4
+	db 0x6C, 0x69, 0x73, 0x74
+	db T_symbol	; list
+	dq L_constants + 46
 	db T_rational	; 1
 	dq 1, 1
-	db T_pair	; (1)
-	dq L_constants + 23, L_constants + 1
-	db T_pair	; (2 1)
-	dq L_constants + 6, L_constants + 40
+	db T_rational	; 2
+	dq 2, 1
 
 section .bss
 free_var_0:	; location of null?
@@ -489,12 +500,316 @@ main:
 	mov rsi, L_code_ptr_eq
 	call bind_primitive
 
-	mov rax, qword (L_constants + 57)
+	mov rax, qword (L_constants + 85)
 	push rax
-	mov rax, qword [free_var_35]
+	mov rax, qword (L_constants + 68)
+	push rax
+	mov rdi, (1 + 8 + 8)	; sob closure
+	call malloc
+	push rax
+	mov rdi, 8 * 0	; new rib
+	call malloc
+	push rax
+	mov rdi, 8 * 1	; extended env
+	call malloc
+	mov rdi, ENV
+	mov rsi, 0
+	mov rdx, 1
+.L_lambda_opt_env_loop_002f:	; ext_env[i + 1] <-- env[i]
+	cmp rsi, 0
+	je .L_lambda_opt_env_end_002f
+	mov rcx, qword [rdi + 8 * rsi]
+	mov qword [rax + 8 * rdx], rcx
+	inc rsi
+	inc rdx
+	jmp .L_lambda_opt_env_loop_002f
+.L_lambda_opt_env_end_002f:
+	pop rbx
+	mov rsi, 0
+.L_lambda_opt_params_loop_005d:	; copy params
+	cmp rsi, 0
+	je .L_lambda_opt_params_end_005d
+	mov rdx, qword [rbp + 8 * rsi + 8 * 4]
+	mov qword [rbx + 8 * rsi], rdx
+	inc rsi
+	jmp .L_lambda_opt_params_loop_005d
+.L_lambda_opt_params_end_005d:
+	mov qword [rax], rbx	; ext_env[0] <-- new_rib 
+	mov rbx, rax
+	pop rax
+	mov byte [rax], T_closure
+	mov SOB_CLOSURE_ENV(rax), rbx
+	mov SOB_CLOSURE_CODE(rax), .L_lambda_opt_code_002f
+	jmp .L_lambda_opt_end_002f
+.L_lambda_opt_code_002f:
+mov r10, qword [rsp+8*2]
+cmp r10, 0
+je .L_lambda_opt_arity_check_exact_002f
+cmp r10, 0
+jg .L_lambda_opt_arity_check_more_002f
+jmp L_error_incorrect_arity_opt
+.L_lambda_opt_arity_check_exact_002f:
+sub rsp, 8
+mov rdx, 3+0
+mov qword rbx, rsp
+.L_lambda_opt_params_loop_005e:
+mov qword rcx, [rbx+8]
+mov qword [rbx], rcx
+dec rdx
+add rbx, 8
+cmp rdx, 0
+je .L_lambda_opt_params_end_005e
+jmp .L_lambda_opt_params_loop_005e
+.L_lambda_opt_params_end_005e:
+inc r10
+mov qword [rsp+8*2], r10
+add r10, 2
+mov qword [rsp + 8*(r10)], sob_nil
+mov r9, [rbp]
+jmp .L_lambda_opt_stack_adjusted_002f
+.L_lambda_opt_arity_check_more_002f:
+mov rax, sob_nil
+mov r10, [rsp+2*8]
+lea r8, [rsp+ 8*(2+r10)]
+sub r10, 0
+.L_lambda_opt_stack_shrink_loop_002f:
+cmp r10, 0
+je .L_lambda_opt_stack_shrink_loop_exit_002f
+mov rcx, rax
+mov rdx, [r8]
+mov rdi, 17
+call malloc
+mov byte [rax], T_pair
+mov SOB_PAIR_CDR(rax), rcx
+mov SOB_PAIR_CAR(rax), rdx
+sub r8, 8
+dec r10
+jmp .L_lambda_opt_stack_shrink_loop_002f
+.L_lambda_opt_stack_shrink_loop_exit_002f:
+mov [rsp+8*(2+1)], rax
+mov r10, 1
+mov [rsp+16], r10
+.L_lambda_opt_stack_adjusted_002f:
+mov r9, [rbp]
+enter 0, 0
+	mov rax, qword (L_constants + 1)
+	push rax
+mov rax, qword [rbp + 32]
 	push rax
 	push 2
-	mov rax, qword [free_var_29]
+	mov rax, qword [free_var_13]
+	cmp byte [rax], T_closure 
+        jne L_code_ptr_error
+
+        mov rbx, SOB_CLOSURE_ENV(rax)
+
+        push rbx
+
+        call SOB_CLOSURE_CODE(rax)
+
+        	push rax
+	mov rax, qword (L_constants + 59)
+	push rax
+	push 2
+	mov rax, qword [free_var_13]
+	cmp byte [rax], T_closure 
+        jne L_code_ptr_error
+
+        mov rbx, SOB_CLOSURE_ENV(rax)
+
+        push rbx
+
+        call SOB_CLOSURE_CODE(rax)
+
+        	push rax
+	mov rax, qword (L_constants + 37)
+	push rax
+	push 2
+	mov rax, qword [free_var_13]
+	cmp byte [rax], T_closure 
+        jne L_code_ptr_error
+
+        mov rbx, SOB_CLOSURE_ENV(rax)
+
+        push rbx
+
+        call SOB_CLOSURE_CODE(rax)
+
+        	push rax
+	mov rax, qword (L_constants + 16)
+	push rax
+	push 2
+	mov rax, qword [free_var_13]
+.L_lambda_simple_arity_check_ok_02a9:
+	cmp byte [rax], T_closure
+
+        jne L_code_ptr_error                      ; rax <- proc
+
+
+        mov rbx, SOB_CLOSURE_ENV(rax)             ; rbx <- env(proc)
+
+        push rbx                                  ; env pushed
+
+        push qword [ rbp + 8 * 1]                 ; old ret addr pushed
+
+
+        push qword [ rbp ]                        ; the same old rbp pushed
+
+        
+        
+        mov r8, [ rbp + 3 * 8]                    ; r8 <- old_code_num_of_args_n
+
+        mov r9, [ rsp + 3 * 8 ]                   ; r9 <- new_code_num_of_args_m
+
+
+        mov r10, r9
+        add r10, 4                                ; total elemnts left to copy: num_of_args + 4 (num_of_args, lexenv retf, rbp in f)
+
+                                                       
+        mov r12, r8                               ; r12 <- index in new code
+        add r12, 4
+
+        mov r14, 0                                ; r14 <- 0 : init box: curr_arg_to_copy
+.L_tc_recycle_frame_loop_016f:
+	mov r14, [rsp + (r10 * 8)]               ; r14 <- i_element_old_code
+
+        mov [rbp + (r12 * 8)], r14
+
+
+
+        mov r14, 0                                ; clean box
+
+
+                                
+        add r10, -1                               ; args_copied_counter--
+
+        add r12, -1 
+
+        cmp r10, 0                                ; element_copied_counter == 0 ?
+	jne .L_tc_recycle_frame_loop_016f
+.L_tc_recycle_frame_done_016f:
+	pop rbp                                  ; restore the old rbp
+
+        mov rcx, qword [rbp]
+        mov rbx, SOB_CLOSURE_CODE(rax)
+          ; rbx <- code(proc)
+
+        jmp rbx
+leave
+mov r9, [rbp]
+ret 8 * (3 + 1)
+.L_lambda_opt_end_002f:	; new closure is in rax
+	push rax
+	push 3
+	mov rdi, (1 + 8 + 8)	; sob closure
+	call malloc
+	push rax
+	mov rdi, 8 * 0	; new rib
+	call malloc
+	push rax
+	mov rdi, 8 * 1	; extended env
+	call malloc
+	mov rdi, ENV
+	mov rsi, 0
+	mov rdx, 1
+.L_lambda_simple_env_loop_013b:	; ext_env[i + 1] <-- env[i]
+	cmp rsi, 0
+	je .L_lambda_simple_env_end_013b
+	mov rcx, qword [rdi + 8 * rsi]
+	mov qword [rax + 8 * rdx], rcx
+	inc rsi
+	inc rdx
+	jmp .L_lambda_simple_env_loop_013b
+.L_lambda_simple_env_end_013b:
+	pop rbx
+	mov rsi, 0
+.L_lambda_simple_params_loop_013b:	; copy params
+	cmp rsi, 0
+	je .L_lambda_simple_params_end_013b
+	mov rdx, qword [rbp + 8 * rsi + 8 * 4]
+	mov qword [rbx + 8 * rsi], rdx
+	inc rsi
+	jmp .L_lambda_simple_params_loop_013b
+.L_lambda_simple_params_end_013b:
+	mov qword [rax], rbx	; ext_env[0] <-- new_rib 
+	mov rbx, rax
+	pop rax
+	mov byte [rax], T_closure
+	mov SOB_CLOSURE_ENV(rax), rbx
+	mov SOB_CLOSURE_CODE(rax), .L_lambda_simple_code_013b
+	jmp .L_lambda_simple_end_013b
+.L_lambda_simple_code_013b:	; lambda-simple body
+	cmp qword [rsp + 8 * 2], 3
+	je .L_lambda_simple_arity_check_ok_02aa
+	push qword [rsp + 8 * 2]
+	push 3
+	jmp L_error_incorrect_arity_simple
+.L_lambda_simple_arity_check_ok_02aa:
+	enter 0, 0
+mov rax, qword [rbp + 48]
+	push rax
+mov rax, qword [rbp + 40]
+	push rax
+	push 2
+mov rax, qword [rbp + 32]
+.L_lambda_simple_arity_check_ok_02ab:
+	cmp byte [rax], T_closure
+
+        jne L_code_ptr_error                      ; rax <- proc
+
+
+        mov rbx, SOB_CLOSURE_ENV(rax)             ; rbx <- env(proc)
+
+        push rbx                                  ; env pushed
+
+        push qword [ rbp + 8 * 1]                 ; old ret addr pushed
+
+
+        push qword [ rbp ]                        ; the same old rbp pushed
+
+        
+        
+        mov r8, [ rbp + 3 * 8]                    ; r8 <- old_code_num_of_args_n
+
+        mov r9, [ rsp + 3 * 8 ]                   ; r9 <- new_code_num_of_args_m
+
+
+        mov r10, r9
+        add r10, 4                                ; total elemnts left to copy: num_of_args + 4 (num_of_args, lexenv retf, rbp in f)
+
+                                                       
+        mov r12, r8                               ; r12 <- index in new code
+        add r12, 4
+
+        mov r14, 0                                ; r14 <- 0 : init box: curr_arg_to_copy
+.L_tc_recycle_frame_loop_0170:
+	mov r14, [rsp + (r10 * 8)]               ; r14 <- i_element_old_code
+
+        mov [rbp + (r12 * 8)], r14
+
+
+
+        mov r14, 0                                ; clean box
+
+
+                                
+        add r10, -1                               ; args_copied_counter--
+
+        add r12, -1 
+
+        cmp r10, 0                                ; element_copied_counter == 0 ?
+	jne .L_tc_recycle_frame_loop_0170
+.L_tc_recycle_frame_done_0170:
+	pop rbp                                  ; restore the old rbp
+
+        mov rcx, qword [rbp]
+        mov rbx, SOB_CLOSURE_CODE(rax)
+          ; rbx <- code(proc)
+
+        jmp rbx
+	leave
+	ret 8 * (2 + 3)
+.L_lambda_simple_end_013b:	; new closure is in rax
 	cmp byte [rax], T_closure 
         jne L_code_ptr_error
 
