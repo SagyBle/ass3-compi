@@ -80,13 +80,13 @@ L_constants:
 	db T_boolean_false
 	db T_boolean_true
 	db T_char, 0x00	; #\x0
-	db T_rational	; 1
-	dq 1, 1
 	db T_rational	; 2
 	dq 2, 1
-	db T_pair	; (2)
+	db T_rational	; 1
+	dq 1, 1
+	db T_pair	; (1)
 	dq L_constants + 23, L_constants + 1
-	db T_pair	; (1 2)
+	db T_pair	; (2 1)
 	dq L_constants + 6, L_constants + 40
 
 section .bss
@@ -201,8 +201,6 @@ free_var_53:	; location of numerator
 free_var_54:	; location of denominator
 	resq 1
 free_var_55:	; location of eq?
-	resq 1
-free_var_56:	; location of id
 	resq 1
 
 extern printf, fprintf, stdout, stderr, fwrite, exit, putchar
@@ -491,109 +489,12 @@ main:
 	mov rsi, L_code_ptr_eq
 	call bind_primitive
 
-	mov rdi, (1 + 8 + 8)	; sob closure
-	call malloc
-	push rax
-	mov rdi, 8 * 0	; new rib
-	call malloc
-	push rax
-	mov rdi, 8 * 1	; extended env
-	call malloc
-	mov rdi, ENV
-	mov rsi, 0
-	mov rdx, 1
-.L_lambda_simple_env_loop_0002:	; ext_env[i + 1] <-- env[i]
-	cmp rsi, 0
-	je .L_lambda_simple_env_end_0002
-	mov rcx, qword [rdi + 8 * rsi]
-	mov qword [rax + 8 * rdx], rcx
-	inc rsi
-	inc rdx
-	jmp .L_lambda_simple_env_loop_0002
-.L_lambda_simple_env_end_0002:
-	pop rbx
-	mov rsi, 0
-.L_lambda_simple_params_loop_0002:	; copy params
-	cmp rsi, 0
-	je .L_lambda_simple_params_end_0002
-	mov rdx, qword [rbp + 8 * rsi + 8 * 4]
-	mov qword [rbx + 8 * rsi], rdx
-	inc rsi
-	jmp .L_lambda_simple_params_loop_0002
-.L_lambda_simple_params_end_0002:
-	mov qword [rax], rbx	; ext_env[0] <-- new_rib 
-	mov rbx, rax
-	pop rax
-	mov byte [rax], T_closure
-	mov SOB_CLOSURE_ENV(rax), rbx
-	mov SOB_CLOSURE_CODE(rax), .L_lambda_simple_code_0002
-	jmp .L_lambda_simple_end_0002
-.L_lambda_simple_code_0002:	; lambda-simple body
-	cmp qword [rsp + 8 * 2], 1
-	je .L_lambda_simple_arity_check_ok_0003
-	push qword [rsp + 8 * 2]
-	push 1
-	jmp L_error_incorrect_arity_simple
-.L_lambda_simple_arity_check_ok_0003:
-	enter 0, 0
-mov rax, qword [rbp + 32]
-	leave
-	ret 8 * (2 + 1)
-.L_lambda_simple_end_0002:	; new closure is in rax
-	mov qword [free_var_56], rax
-	mov rax, sob_void
-
-	mov rdi, rax
-	call print_sexpr_if_not_void
-
-	mov rax, qword (L_constants + 6)
-	push rax
 	mov rax, qword (L_constants + 57)
 	push rax
-	mov rax, qword (L_constants + 1)
-	push rax
-	mov rax, qword [free_var_34]
-	push rax
-	push 2
-	mov rax, qword [free_var_13]
-	cmp byte [rax], T_closure 
-        jne L_code_ptr_error
-
-        mov rbx, SOB_CLOSURE_ENV(rax)
-
-        push rbx
-
-        call SOB_CLOSURE_CODE(rax)
-
-        	push rax
-	mov rax, qword [free_var_56]
+	mov rax, qword [free_var_35]
 	push rax
 	push 2
 	mov rax, qword [free_var_29]
-	cmp byte [rax], T_closure 
-        jne L_code_ptr_error
-
-        mov rbx, SOB_CLOSURE_ENV(rax)
-
-        push rbx
-
-        call SOB_CLOSURE_CODE(rax)
-
-        	push rax
-	push 2
-	mov rax, qword [free_var_29]
-	cmp byte [rax], T_closure 
-        jne L_code_ptr_error
-
-        mov rbx, SOB_CLOSURE_ENV(rax)
-
-        push rbx
-
-        call SOB_CLOSURE_CODE(rax)
-
-        	push rax
-	push 2
-	mov rax, qword [free_var_34]
 	cmp byte [rax], T_closure 
         jne L_code_ptr_error
 
@@ -1227,6 +1128,30 @@ L_code_ptr_bin_apply:
 
 
 .L_flip_args_order:
+        mov r8, r11  
+        add r8, -1                                      ; limit                              
+        mov r10, qword 0
+        
+.L_flip_loop:
+        cmp r8, 0
+        je .L_end_of_flip_loop
+        mov r15, qword [rsp + (2 + r11) * 8]                    ; r15 <- top
+        mov r14, qword [rsp + (3 + r10) * 8]                    ;  r14 <- down
+        mov [rsp + (2 + r11) * 8], qword r14                    ; swap
+        mov [rsp + (3 + r10) * 8], qword r15                    
+
+        add r10, 1
+        add r11, -1
+
+        add r8, -2                                      ; arg_left_to_swap -= 2
+
+        cmp r8, 0
+        jg .L_flip_loop
+
+.L_end_of_flip_loop:
+
+        
+      
 
 .L_all_args_are_flipped:
 

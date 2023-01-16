@@ -619,6 +619,30 @@ L_code_ptr_bin_apply:
 
 
 .L_flip_args_order:
+        mov r8, r11  
+        add r8, -1                                      ; limit                              
+        mov r10, qword 0
+        
+.L_flip_loop:
+        cmp r8, 0
+        je .L_end_of_flip_loop
+        mov r15, qword [rsp + (2 + r11) * 8]                    ; r15 <- top
+        mov r14, qword [rsp + (3 + r10) * 8]                    ;  r14 <- down
+        mov [rsp + (2 + r11) * 8], qword r14                    ; swap
+        mov [rsp + (3 + r10) * 8], qword r15                    
+
+        add r10, 1
+        add r11, -1
+
+        add r8, -2                                      ; arg_left_to_swap -= 2
+
+        cmp r8, 0
+        jg .L_flip_loop
+
+.L_end_of_flip_loop:
+
+        
+      
 
 .L_all_args_are_flipped:
 
