@@ -1505,7 +1505,9 @@ let should_box_var name expr params =
   let semantics expr =
     auto_box
       (annotate_tail_calls
-         (annotate_lexical_address expr));;
+         (annotate_lexical_address expr)
+         )
+        ;;
 
 end;; (* end of module Semantic_Analysis *)
 
@@ -2503,7 +2505,9 @@ let should_box_var name expr params =
   let semantics expr =
     auto_box
       (annotate_tail_calls
-         (annotate_lexical_address expr));;
+         (annotate_lexical_address expr)
+         )
+        ;;
 
 end;; (* end of module Semantic_Analysis *)
 

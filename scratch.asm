@@ -1286,3 +1286,47 @@ L_code_ptr_bin_apply:
 ;         mov r13, SOB_CLOSURE_CODE(r12)
 ;         jmp r13
 
+
+
+.L_flip_args_order:
+        mov r8, qword 0                                 ; pointer to first_arg init
+        mov r14, 0                                      ; offset
+
+        ; mov r14, qword r11                              ; r14 <- num of args
+        ; add r14, -1
+        ; add r14, 3  
+        ; mul r14, 8                                      ; r14 <- (3 + (n - 1)) * 8
+        ; mov r8, rsp                                          
+        ; add r8, r14                                     ; r8 <- pointer to first_arg   
+        
+        mov r8, [rsp + (2 + r11) * 8]
+
+
+        mov r9, qword 0                                 ; last arg pointer
+        mov r9, rsp + (3 * 8)
+
+        mov r10, qword 0                                ; args_swaped_counter (step in += 2)
+
+        add r11, -1                                     ; r11 <- nun of args to swap: n-1
+
+        ; mov r14, qword 0                                ; current offset
+        mov r15, qword 0                                ; temp 
+.L_flip_loop:
+
+        mov r8, [rsp + (3 + r11) * 8]
+
+
+        
+        
+        mov r15, qword [r8]
+        mov [r8], qword [r9]
+        mov [r9], qword r15                             ; swaping
+        mov r15, qword 0
+
+        add r10, 2
+        ; add r14, 1
+        sub r8, qword  8
+        add r9, qword  8 
+        
+        cmp byte r10, r11
+        jl .L_flip_loop

@@ -575,12 +575,12 @@ bind_primitive:
 L_code_ptr_bin_apply:
         mov rcx, qword [rsp]
         mov r8, [rsp +  2 * 8]                          ; r8 <- num_of_args
-        cmp byte r8, 2       
+        cmp r8, 2       
         jne L_error_arg_count_2                         ; check right number of parameters.           
 
         mov r8, qword [rsp + 4 * 8]                     ; r8 <- list_of_args
         assert_pair(r8)
-; bul_bul
+
         cmp byte [r8], T_nil 
         je L_error_arg_count_0                       ; list.length == 0 ?
 
@@ -640,10 +640,6 @@ L_code_ptr_bin_apply:
         jg .L_flip_loop
 
 .L_end_of_flip_loop:
-
-        
-      
-
 .L_all_args_are_flipped:
 
         mov r13, SOB_CLOSURE_CODE(r12)
